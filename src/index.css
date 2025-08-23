@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+.letter-box {
+  text-transform: uppercase;
+  @apply w-15 h-15 border border-gray-600 flex items-center justify-center m-1 text-2xl font-bold;
+  @apply text-white;
+}
