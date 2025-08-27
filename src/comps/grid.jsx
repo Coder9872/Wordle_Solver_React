@@ -1,12 +1,14 @@
 import { string } from "prop-types";
 
-const colorMap = {
-    g: 'bg-[#538d4f]',
-    y: 'bg-[#b4a03b]',
-    b: 'bg-[#3a393c]',
-    black: 'bg-black',
-    default: 'bg-[#121212]',
-};
+// removed Tailwind colorMap: use raw hex for flip animation
+
+const colorHex = {
+     g: '#538d4f',
+     y: '#b4a03b',
+     b: '#3a393c',
+     black: '#000000',
+     default: '#121212',
+ };
 const defaultLetters = Array.from({ length: 6 }, () => Array(5).fill(''));
 const defaultColors = Array.from({ length: 6 }, () => Array(5).fill('default'));
 function stringsTo2DArray(words, rows = 6, cols = 5) {
@@ -20,14 +22,17 @@ function Grid({ letters = defaultLetters, colors = defaultColors }) {
     colors = stringsTo2DArray(colors);
     return (
         <div className='flex justify-center flex-col items-center '>
-            <h1 className='text-4xl font-bold text-blue-200 mb-8 mt-8'>Wordle Solver</h1>
 
             {letters.map((row, rowIdx) => (
                 <div key={rowIdx} className='flex flex-row mb-0.5' id={`row-${rowIdx}`}>
                     {row.map((letter, colIdx) => (
                         <div
                             key={colIdx}
-                            className={`letter-box ${colorMap[colors[rowIdx][colIdx]] || colorMap.default}`}
+                            className={`letter-box ${letter ? 'flip-in' : ''}`}
+                            style={{
+                                '--tile-color': colorHex[colors[rowIdx][colIdx]] || colorHex.default,
+                                animationDelay: `${colIdx * 300}ms`
+                            }}
                         >
                             {letter}
                         </div>

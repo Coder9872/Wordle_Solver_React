@@ -38,7 +38,8 @@ export function filterWords(possible, greens, yellows, grays) {
       if (yellows[i] && yellows[i].includes(ch)) return false;
       // gray: letter can't appear unless it's in yellows elsewhere
       if (grays.includes(ch)) {
-        const required = yellows.some(arr => arr.includes(ch));
+        // allow gray letters if they are already confirmed as greens (duplicate letter handling)
+        const required = yellows.some(arr => arr.includes(ch)) || greens.includes(ch);
         if (!required) return false;
       }
     }
@@ -56,20 +57,7 @@ export function filterWords(possible, greens, yellows, grays) {
 }
 
 // Calculate information gain for a guess
-function calculateInfoGain(guess, possible) {
-  const total = possible.length;
-  const counts = {};
-  for (const actual of possible) {
-    const pattern = getFeedback(guess, actual);
-    counts[pattern] = (counts[pattern] || 0) + 1;
-  }
-  let info = 0;
-  for (const cnt of Object.values(counts)) {
-    const p = cnt / total;
-    info += p * Math.log2(1 / p);
-  }
-  return info;
-}
+
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -81,20 +69,66 @@ function shuffle(array) {
   return a;
 }
 
-// Find best guess, sampling if necessary
-export function findBestGuess(possible, isFirst = false, sampleSize = possible.length) {
-  if (isFirst) return 'tares';
-  const candidates = possible.length <= sampleSize
-    ? possible
-    : shuffle(possible).slice(0, sampleSize);
-  let best = null;
-  let bestScore = -Infinity;
-  for (const guess of candidates) {
-    const score = calculateInfoGain(guess, possible);
-    if (score > bestScore) {
-      bestScore = score;
-      best = guess;
+// Calculate information gain for a guess
+function calculateInfoGain(partitions, total) {
+  let info = 0;
+  for (const count of Object.values(partitions)) {
+    const p = count / total;
+    if (p > 0) {
+      info += p * Math.log2(1 / p);
     }
   }
-  return best;
+  return info;
+}
+
+// Find best guess by minimizing the size of the largest remaining word list.
+export function findBestGuess(possible, isFirst = false) {
+  if (isFirst) {
+    // For the first guess, return a pre-calculated best word and an empty list for top 5.
+    return { best: "salet", top: [] };
+  }
+
+  if (possible.length === 1) {
+    const best = possible[0] || '';
+    return { best, top: [{ guess: best, worstCase: 1, entropy: 0 }] };
+  }
+  if (possible.length === 2) {
+    // for two candidates, show both and pick the alphabetically later word first
+    const sorted = possible.slice().sort();
+    const top = sorted.map(g => ({ guess: g, worstCase: 1, entropy: 0 }));
+    const best = sorted[1] || sorted[0];
+    return { best, top };
+  }
+
+  const guessScores = [];
+  const total = possible.length;
+
+  // Iterate through all possible words to find the one that minimizes the worst-case scenario.
+  for (const guess of possible) {
+    const partitions = {};
+    for (const answer of possible) {
+      const feedback = getFeedback(guess, answer);
+      if (!partitions[feedback]) {
+        partitions[feedback] = 0;
+      }
+      partitions[feedback]++;
+    }
+
+    const worstCaseSize = Math.max(...Object.values(partitions));
+    const entropy = calculateInfoGain(partitions, total);
+    guessScores.push({ guess, worstCase: worstCaseSize, entropy });
+  }
+
+  // Sort primarily by worst-case size (ascending), then by entropy (descending) as a tie-breaker.
+  guessScores.sort((a, b) => {
+    if (a.entropy !== b.entropy) {
+      return -1*a.entropy + b.entropy;
+    }
+    return b.worstCase - a.worstCase;
+  });
+
+  const top15 = guessScores.slice(0, 15);
+  const bestGuess = top15[0]?.guess || possible[0];
+
+  return { best: bestGuess, top: top15 };
 }

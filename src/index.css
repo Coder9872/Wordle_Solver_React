@@ -2,6 +2,28 @@
 
 .letter-box {
   text-transform: uppercase;
-  @apply w-15 h-15 border border-gray-600 flex items-center justify-center m-1 text-2xl font-bold;
+  @apply w-18 h-18 border border-gray-600 flex items-center justify-center m-1 text-4xl font-bold;
   @apply text-white;
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+@keyframes flip-in {
+    0%   { transform: rotateX(0deg);   background-color: #3a393c; }
+  49%  { transform: rotateX(90deg);  background-color: #3a393c; }
+  50%  { transform: rotateX(90deg);  background-color: var(--tile-color); }
+  100% { transform: rotateX(0deg);   background-color: var(--tile-color); }
+}
+@keyframes fade-in {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+.flip-in {
+  animation: flip-in 800ms ease forwards;
+  transform-origin: center center;
+}
+.fade-in {
+  opacity: 0;
+  animation: fade-in 400ms ease forwards;
 }
